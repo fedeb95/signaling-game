@@ -38,6 +38,8 @@ def positive_strategy(state, sender, receiver):
     if state == act:
         sender.put_ball(state, signal)    
         receiver.put_ball(signal, state)
+        return True
+    return False
 
 def positive_negative_strategy(state, sender, receiver): 
     signal = sender.signal(state)
@@ -45,30 +47,39 @@ def positive_negative_strategy(state, sender, receiver):
     if state == act:
         sender.put_ball(state, signal)    
         receiver.put_ball(signal, state)
+        return True
     else:
         sender.remove_but_one(state, signal)
         receiver.remove_but_one(signal, state)
+        return False
 
 def main():
     parser = argparse.ArgumentParser(description='A Lewis singaling system simulation')
     parser.add_argument('-e', '--epochs', dest='epochs', action='store', default='1000', type=int)
     parser.add_argument('-st', '--states', dest='states', action='store', default='2', type=int)
     parser.add_argument('-sg', '--signals', dest='signals', action='store', default='2', type=int)
-    parser.add_argument('-p', '--payoff', dest='payoff', action='store', default='positive', type=str)
+    parser.add_argument('-p', '--payoff', dest='payoff', action='store', default='positive', type=str,
+        choices=['positive', 'positive_negative'])
     args = parser.parse_args()
 
     states = [ i for i in range(0, args.states) ]
     signals = [ i for i in range(0, args.signals) ]
     sender = Sender(states, signals)
     receiver = Receiver(signals, states)
+    successes = 0
+    total = 0
     for i in range(0, args.epochs):
         state = random.choice(states) 
         if args.payoff == 'positive':
-            positive_strategy(state, sender, receiver)
+            strategy = positive_strategy
         elif args.payoff == 'positive_negative':
-            positive_negative_strategy(state, sender, receiver)
+            strategy = positive_negative_strategy
         else:
             raise TypeError('Unknown payoff type, supported: positive, positive_negative')
+
+        if strategy(state, sender, receiver):
+            successes += 1
+        total += 1
 
     print('Sender:')
     for st in states:
@@ -82,6 +93,7 @@ def main():
         for st in states:
             count = len([ el for el in receiver.urns[sg] if el == st ])
             print(f'\t\tState {st} count: {count}') 
+    print(f'Success rate: {successes/total}')
 
 if __name__=='__main__':
     main()
