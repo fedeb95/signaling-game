@@ -54,25 +54,25 @@ def positive_negative_strategy(state, sender, receiver):
         return False
 
 def main():
-    parser = argparse.ArgumentParser(description='A Lewis singaling system simulation')
-    parser.add_argument('-e', '--epochs', dest='epochs', action='store', default='1000', type=int)
-    parser.add_argument('-st', '--states', dest='states', action='store', default='2', type=int)
-    parser.add_argument('-sg', '--signals', dest='signals', action='store', default='2', type=int)
-    parser.add_argument('-p', '--payoff', dest='payoff', action='store', default='positive', type=str,
+    parser = argparse.ArgumentParser(description='A Lewis singaling game simulation')
+    parser.add_argument('-r', '--runs', dest='runs', action='store', default='1000', help='Number of runs', type=int)
+    parser.add_argument('-s', '--states', dest='states', action='store', default='2', help='Number of states', type=int)
+    parser.add_argument('-t', '--terms', dest='terms', action='store', default='2', help='Number of terms (signals)', type=int)
+    parser.add_argument('-l', '--learning', dest='learning', action='store', default='positive', help='Type of learning', type=str,
         choices=['positive', 'positive_negative'])
     args = parser.parse_args()
 
     states = [ i for i in range(0, args.states) ]
-    signals = [ i for i in range(0, args.signals) ]
+    signals = [ i for i in range(0, args.terms) ]
     sender = Sender(states, signals)
     receiver = Receiver(signals, states)
     successes = 0
     total = 0
-    for i in range(0, args.epochs):
+    for i in range(0, args.runs):
         state = random.choice(states) 
-        if args.payoff == 'positive':
+        if args.learning == 'positive':
             strategy = positive_strategy
-        elif args.payoff == 'positive_negative':
+        elif args.learning == 'positive_negative':
             strategy = positive_negative_strategy
         else:
             raise TypeError('Unknown payoff type, supported: positive, positive_negative')
