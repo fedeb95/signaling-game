@@ -6,23 +6,34 @@ def create_urns(urn_types, ball_types):
     for t in urn_types:
             for b in ball_types:
                 if not t in urns:
-                    urns[t] = []
-                urns[t].append(b)
+                    urns[t] = {}
+                urns[t][b] = 1
     return urns
 
 class UrnLearner():
     def __init__(self, urn_types, ball_types):
         self.urns = create_urns(urn_types, ball_types)
+        self.urn_types = urn_types
+        self.ball_types = ball_types
    
     def choose_ball(self, urn_type):
-        return random.choice(self.urns[urn_type]) 
+        urn = self.urns[urn_type]
+        total = sum([ urn[k] for k in urn ])
+        weights = [ urn[k]/total for k in urn ]
+        # hacky, but works: last element is 1 - sum of other elements
+        weights[len(weights)-1] = 1 - sum(weights[0:len(weights)-1])
+        if not sum(weights) == 1:
+            print(weights)
+            print(sum(weights))
+            raise ValueError('Sum of weights must equal 1')
+        return random.choices(self.ball_types, weights=weights)[0]
 
     def put_ball(self, urn_type, ball_type):
-        self.urns[urn_type].append(ball_type) 
+        self.urns[urn_type][ball_type] += 1
 
     def remove_but_one(self, urn_type, ball_type):
-        if len([ b for b in self.urns[urn_type] if b == ball_type ]) > 1:
-            self.urns[urn_type].remove(ball_type)
+        if self.urns[urn_type][ball_type] > 1:
+            self.urns[urn_type][ball_type] += 1
         
 class Sender(UrnLearner):
     def signal(self, state):
