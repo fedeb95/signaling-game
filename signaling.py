@@ -1,6 +1,8 @@
 import random
 import argparse
 
+import csv
+
 def create_urns(urn_types, ball_types):
     urns = {}
     for t in urn_types:
@@ -91,6 +93,7 @@ class RandPositiveStrategy(PositiveStrategy):
             
 def main():
     parser = argparse.ArgumentParser(description='A Lewis singaling game simulation')
+    parser.add_argument('-n', '--retries', dest='retries', action='store', default='1', help='Number of simulations', type=int)
     parser.add_argument('-r', '--runs', dest='runs', action='store', default='1000', help='Number of runs', type=int)
     parser.add_argument('-s', '--states', dest='states', action='store', default='2', help='Number of states', type=int)
     parser.add_argument('-t', '--terms', dest='terms', action='store', default='2', help='Number of terms (signals)', type=int)
@@ -98,40 +101,43 @@ def main():
         choices=['positive', 'positive_negative', 'randomized'])
     args = parser.parse_args()
 
-    states = [ i for i in range(0, args.states) ]
-    signals = [ i for i in range(0, args.terms) ]
-    sender = Sender(states, signals)
-    receiver = Receiver(signals, states)
-    successes = 0
-    total = 0
-    for i in range(0, args.runs):
-        state = random.choice(states) 
-        if args.learning == 'positive':
-            strategy = PositiveStrategy()
-        elif args.learning == 'positive_negative':
-            strategy = PositiveNegativeStrategy() 
-        elif args.learning == 'randomized':
-            strategy = RandPositiveStrategy((0.8, 1.2))
-        else:
-            raise TypeError('Unknown payoff type, supported: positive, positive_negative, randomized')
+    filename = 'signaling.csv'
+    with open(filename, 'w') as csvfile:
+        csvwriter = csv.writer(csvfile)
+        csvwriter.writerow(['Try', 'Run', 'Type', 'Signal', 'State', 'Count', 'SuccessRate'])
 
-        if strategy.apply(state, sender, receiver):
-            successes += 1
-        total += 1
+    for k in range(0, args.retries):
+        states = [ i for i in range(0, args.states) ]
+        signals = [ i for i in range(0, args.terms) ]
+        sender = Sender(states, signals)
+        receiver = Receiver(signals, states)
+        successes = 0
+        total = 0
+        for i in range(0, args.runs):
+            state = random.choice(states) 
+            if args.learning == 'positive':
+                strategy = PositiveStrategy()
+            elif args.learning == 'positive_negative':
+                strategy = PositiveNegativeStrategy() 
+            elif args.learning == 'randomized':
+                strategy = RandPositiveStrategy((0.8, 1.2))
+            else:
+                raise TypeError('Unknown payoff type, supported: positive, positive_negative, randomized')
 
-    print('Sender:')
-    for st in states:
-        print(f'\tState {st}:')
-        for sg in signals:
-            count = sender.urns[sg][st]
-            print(f'\t\tSignal {sg} count: {count}') 
-    print('Receiver:')
-    for sg in signals:
-        print(f'\tSignal {sg}:')
-        for st in states:
-            count = receiver.urns[st][sg]
-            print(f'\t\tState {st} count: {count}') 
-    print(f'Success rate: {successes/total}')
+            if strategy.apply(state, sender, receiver):
+                successes += 1
+            total += 1
+            
+            with open(filename, 'a+') as csvfile:
+                csvwriter = csv.writer(csvfile)
+                for st in states:
+                    for sg in signals:
+                        count = sender.urns[st][sg]
+                        csvwriter.writerow([str(k), str(total), 'SENDER', str(sg), str(st), str(count), str(successes/total)])
+                for sg in signals:
+                    for st in states:
+                        count = receiver.urns[sg][st]
+                        csvwriter.writerow([str(k), str(total), 'RECEIVER', str(sg), str(st), str(count), str(successes/total)])
 
 if __name__=='__main__':
     main()
